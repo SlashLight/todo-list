@@ -4,10 +4,11 @@
 // - protoc             v3.19.6
 // source: auth.proto
 
-package authv1
+package auth
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
