@@ -3,6 +3,8 @@ package main
 import (
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/SlashLight/todo-list/internal/app"
 	"github.com/SlashLight/todo-list/internal/config"
@@ -20,11 +22,21 @@ func main() {
 	log := setupLogger(cfg.Env)
 
 	log.Info("starting app")
-	//TODO: [] init app
+	//TODO: [x] init app
 	application := app.New(log, cfg.GRPC.Port, cfg.AuthStoragePath, cfg.TokenTTL)
-	application.GRPCSrv.MustRun()
 
-	//TODO: [] start gRPC server
+	go application.GRPCSrv.MustRun()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	<-stop
+
+	application.GRPCSrv.Stop()
+
+	log.Info("application stopped")
+
+	//TODO: [x] start gRPC server
 }
 
 func setupLogger(env string) *slog.Logger {

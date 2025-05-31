@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattn/go-sqlite3"
 
-	"github.com/SlashLight/todo-list/internal/models"
+	"github.com/SlashLight/todo-list/internal/domain/models"
 	"github.com/SlashLight/todo-list/pkg/my_err"
 )
 
@@ -16,15 +16,11 @@ type Storage struct {
 	db *sql.DB
 }
 
-func NewUserStorage(storagePath string) (*Storage, error) {
-	const op = "storage.sqlite.New"
+func New(storagePath string) (*Storage, error) {
+	const op = "storage.Sqlite.New"
 
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if _, err := db.Exec(CreateUserTable); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -32,7 +28,7 @@ func NewUserStorage(storagePath string) (*Storage, error) {
 }
 
 func (s *Storage) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	const op = "repository.sqlite.GetByEmail"
+	const op = "storage.sqlite.GetByEmail"
 
 	user := &models.User{}
 
@@ -49,15 +45,17 @@ func (s *Storage) GetByEmail(ctx context.Context, email string) (*models.User, e
 }
 
 func (s Storage) Register(ctx context.Context, user *models.User) error {
-	const op = "repository.sqlite.Register"
+	const op = "storage.sqlite.Register"
 
 	_, err := s.db.ExecContext(ctx, InsertNewUser, user.ID, user.Email, user.PasswordHash)
 	if err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		var sqliteErr sqlite3.Error
+
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			return fmt.Errorf("%s: %w", op, my_err.ErrUserExists)
 		}
 
-		return fmt.Errorf("%s: executing statement: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil

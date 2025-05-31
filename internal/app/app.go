@@ -5,6 +5,8 @@ import (
 	"time"
 
 	grpcapp "github.com/SlashLight/todo-list/internal/app/grpc"
+	auth_service "github.com/SlashLight/todo-list/internal/services/auth-service"
+	"github.com/SlashLight/todo-list/internal/storage/sqlite"
 )
 
 type App struct {
@@ -12,9 +14,13 @@ type App struct {
 }
 
 func New(log *slog.Logger, grpcPort int, storagePath string, tokenTTL time.Duration) *App {
-	//TODO: init storage
+	storage, err := sqlite.New(storagePath)
+	if err != nil {
+		panic(err)
+	}
 
-	grpcApp := grpcapp.New(log, grpcPort)
+	authService := auth_service.New(storage, storage, log, tokenTTL)
+	grpcApp := grpcapp.New(log, authService, grpcPort)
 
 	return &App{GRPCSrv: grpcApp}
 }

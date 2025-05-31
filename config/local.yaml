@@ -1,0 +1,7 @@
+env: "local"
+auth-storage-path: "./storage/todo.db"
+task-storage-path: "./storage/todo.db"
+token-ttl: 1h
+grpc:
+  port: 44044
+  timeout: 10h
