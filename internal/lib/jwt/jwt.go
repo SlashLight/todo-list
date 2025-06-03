@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"github.com/SlashLight/todo-list/internal/domain/models"
 )
@@ -22,4 +23,13 @@ func NewToken(user *models.User, secret string, duration time.Duration) (string,
 	}
 
 	return tokenString, nil
+}
+
+func SessionFromToken(token *jwt.Token) *models.Session {
+	sess := &models.Session{
+		UserID: token.Claims.(jwt.MapClaims)["uid"].(uuid.UUID),
+		Email:  token.Claims.(jwt.MapClaims)["email"].(string),
+	}
+
+	return sess
 }

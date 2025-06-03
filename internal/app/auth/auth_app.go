@@ -1,10 +1,10 @@
-package app
+package auth
 
 import (
 	"log/slog"
 	"time"
 
-	grpcapp "github.com/SlashLight/todo-list/internal/app/grpc"
+	grpcapp "github.com/SlashLight/todo-list/internal/app/auth/grpc"
 	auth_service "github.com/SlashLight/todo-list/internal/services/auth-service"
 	"github.com/SlashLight/todo-list/internal/storage/sqlite"
 )

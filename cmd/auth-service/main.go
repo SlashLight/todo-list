@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/SlashLight/todo-list/internal/app"
+	"github.com/SlashLight/todo-list/internal/app/auth"
 	"github.com/SlashLight/todo-list/internal/config"
 )
 
@@ -23,7 +23,7 @@ func main() {
 
 	log.Info("starting app")
 	//TODO: [x] init app
-	application := app.New(log, cfg.GRPC.Port, cfg.AuthStoragePath, cfg.TokenTTL)
+	application := auth.New(log, cfg.GRPC.Port, cfg.AuthStoragePath, cfg.TokenTTL)
 
 	go application.GRPCSrv.MustRun()
 

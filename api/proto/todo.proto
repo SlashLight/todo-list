@@ -25,12 +25,17 @@ message TaskRequest {
   string author_id = 1;
 }
 
-message TaskResponse {
+message Task {
   string id = 1;
+  string author_id = 6;
   string title = 2;
   string description = 3;
   string status = 4;
   string deadline = 5;
+}
+
+message TaskResponse {
+  repeated Task tasks = 1;
 }
 
 message UpdateRequest {
