@@ -17,13 +17,13 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad()
+	cfg := config.MustLoad().AuthConfig
 
 	log := setupLogger(cfg.Env)
 
 	log.Info("starting app")
 	//TODO: [x] init app
-	application := auth.New(log, cfg.GRPC.Port, cfg.AuthStoragePath, cfg.TokenTTL)
+	application := auth.New(log, cfg.Port, cfg.StoragePath, cfg.TokenTTL, cfg.SecretKey)
 
 	go application.GRPCSrv.MustRun()
 

@@ -35,12 +35,13 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
-func New(userSaver UserSaver, userGetter UserProvider, log *slog.Logger, tokenTTL time.Duration) *Service {
+func New(userSaver UserSaver, userGetter UserProvider, log *slog.Logger, tokenTTL time.Duration, secret string) *Service {
 	return &Service{
 		userSaver:    userSaver,
 		UserProvider: userGetter,
 		logger:       log,
 		tokenTTL:     tokenTTL,
+		tokenSecret:  secret,
 	}
 }
 

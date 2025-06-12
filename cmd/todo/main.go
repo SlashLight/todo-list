@@ -17,13 +17,13 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad()
+	cfg := config.MustLoad().TaskConfig
 
 	log := setupLogger(cfg.Env)
 
 	log.Info("starting app")
 
-	application := todo.New(log, cfg.GRPC.Port, cfg.AuthStoragePath)
+	application := todo.New(log, cfg.Port, cfg.StoragePath)
 
 	go application.GRPCSrv.MustRun()
 

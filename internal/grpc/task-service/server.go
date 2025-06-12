@@ -2,6 +2,7 @@ package task_service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,13 +12,14 @@ import (
 
 	todov1 "github.com/SlashLight/todo-list/api/gen/go/todo"
 	"github.com/SlashLight/todo-list/internal/domain/models"
+	"github.com/SlashLight/todo-list/pkg/my_err"
 )
 
 type Service interface {
-	CreateTask(ctx context.Context, title, description string, deadline time.Time) (string, error)
-	GetTasks(ctx context.Context) ([]*models.Task, error)
+	CreateTask(ctx context.Context, authorID uuid.UUID, title, description string, deadline time.Time) (string, error)
+	GetTasks(ctx context.Context, authorID uuid.UUID) ([]*models.Task, error)
 	UpdateTask(ctx context.Context, newTask *models.Task) error
-	DeleteTask(ctx context.Context, taskID uuid.UUID) error
+	DeleteTask(ctx context.Context, taskID, authorID uuid.UUID) error
 }
 
 type serverAPI struct {
@@ -46,7 +48,12 @@ func (s *serverAPI) CreateTask(ctx context.Context, req *todov1.NewTaskRequest) 
 		}
 	}
 
-	taskID, err := s.service.CreateTask(ctx, req.GetTitle(), req.GetDescription(), deadline)
+	authorID, err := validateUID(req.GetAuthorId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid author ID: %s", err))
+	}
+
+	taskID, err := s.service.CreateTask(ctx, authorID, req.GetTitle(), req.GetDescription(), deadline)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "internal error")
 	}
@@ -55,14 +62,12 @@ func (s *serverAPI) CreateTask(ctx context.Context, req *todov1.NewTaskRequest) 
 }
 
 func (s *serverAPI) GetTasks(ctx context.Context, req *todov1.TaskRequest) (*todov1.TaskResponse, error) {
-	id, err := uuid.Parse(req.AuthorId)
+	authorID, err := validateUID(req.GetAuthorId())
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "author id is not a valid uuid")
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid author ID: %s", err))
 	}
 
-	session := &models.Session{UserID: id}
-	ctx = models.ContextWithSession(ctx, session)
-	tasks, err := s.service.GetTasks(ctx)
+	tasks, err := s.service.GetTasks(ctx, authorID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "internal error")
 	}
@@ -83,12 +88,17 @@ func (s *serverAPI) GetTasks(ctx context.Context, req *todov1.TaskRequest) (*tod
 }
 
 func (s *serverAPI) DeleteTask(ctx context.Context, req *todov1.DeleteRequest) (*todov1.EmptyResponse, error) {
-	id, err := uuid.Parse(req.GetTaskId())
+	id, err := validateUID(req.GetTaskId())
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "id is not a valid uuid")
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid task ID: %s", err))
 	}
 
-	err = s.service.DeleteTask(ctx, id)
+	authorID, err := validateUID(req.GetAuthorId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid author ID: %s", err))
+	}
+
+	err = s.service.DeleteTask(ctx, id, authorID)
 	if err != nil {
 		//TODO ...
 		return nil, status.Error(codes.Internal, "internal error")
@@ -98,7 +108,7 @@ func (s *serverAPI) DeleteTask(ctx context.Context, req *todov1.DeleteRequest) (
 }
 
 func (s *serverAPI) UpdateTask(ctx context.Context, req *todov1.UpdateRequest) (*todov1.EmptyResponse, error) {
-	newTask, err := validateTask(req)
+	newTask, err := validateNewTask(req)
 	if err != nil {
 		return nil, err
 	}
@@ -112,15 +122,21 @@ func (s *serverAPI) UpdateTask(ctx context.Context, req *todov1.UpdateRequest) (
 	return nil, nil
 }
 
-func validateTask(req *todov1.UpdateRequest) (*models.Task, error) {
+func validateNewTask(req *todov1.UpdateRequest) (*models.Task, error) {
 	var newTask *models.Task
 
-	id, err := uuid.Parse(req.GetId())
+	id, err := validateUID(req.GetId())
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "id is not a valid uuid")
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid task ID: %s", err))
+	}
+
+	authorID, err := validateUID(req.GetAuthorId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid author ID: %s", err))
 	}
 
 	newTask.ID = id
+	newTask.AuthorID = authorID
 	if req.GetNewDeadline() != "" {
 		newDeadline, err := time.Parse(timeLayout, req.GetNewDeadline())
 		if err != nil {
@@ -135,4 +151,17 @@ func validateTask(req *todov1.UpdateRequest) (*models.Task, error) {
 	newTask.Status = req.GetNewStatus()
 
 	return newTask, nil
+}
+
+func validateUID(UIDString string) (uuid.UUID, error) {
+	if UIDString == "" {
+		return uuid.Nil, my_err.ErrEmptyField
+	}
+
+	authorID, err := uuid.Parse(UIDString)
+	if err != nil {
+		return uuid.Nil, my_err.ErrParseUUID
+	}
+
+	return authorID, nil
 }

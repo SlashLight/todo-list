@@ -13,6 +13,7 @@ service Todo {
 
 message NewTaskRequest {
   string title = 1;
+  string author_id = 4;
   string description = 2;
   string deadline = 3;
 }
@@ -44,10 +45,12 @@ message UpdateRequest {
   string new_status = 3;
   string new_deadline = 4;
   string id = 5;
+  string author_id = 6;
 }
 
 message EmptyResponse {}
 
 message DeleteRequest {
   string task_id = 1;
+  string author_id = 2;
 }

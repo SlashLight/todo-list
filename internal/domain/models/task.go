@@ -7,10 +7,10 @@ import (
 )
 
 type Task struct {
-	ID          uuid.UUID
-	AuthorID    uuid.UUID
-	Title       string
-	Description string
-	Status      string
-	Deadline    time.Time
+	ID          uuid.UUID `json:"id"`
+	AuthorID    uuid.UUID `json:"author-id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	Status      string    `json:"status"`
+	Deadline    time.Time `json:"deadline,omitempty"`
 }

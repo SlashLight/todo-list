@@ -1,7 +1,23 @@
 env: "local"
-auth-storage-path: "./storage/todo.db"
 task-storage-path: "./storage/todo.db"
-token-ttl: 1h
+
 grpc:
-  port: 44044
-  timeout: 10h
+  auth:
+    port: 9081
+    timeout: 1m
+    env: "local"
+    storage-path: "./storage/todo.db"
+    secret-key: "my_very_secret_key"
+    token-ttl: 1h
+  task:
+    port: 9082
+    timeout: 1m
+    env: "local"
+    storage-path: "./storage/todo.db"
+
+http:
+  gateway:
+    port: 8080
+    timeout: 1m
+    secret-key: "my_very_secret_key"
+    env: "local"

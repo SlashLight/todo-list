@@ -9,15 +9,40 @@ import (
 )
 
 type Config struct {
-	Env             string        `yaml:"env" env-default:"local"`
-	AuthStoragePath string        `yaml:"auth-storage-path" env-required:"true"`
-	TokenTTL        time.Duration `yaml:"token-ttl" env-reuired:"true"`
-	GRPC            GRPCConfig    `yaml:"grpc"`
+	GRPCConfig `yaml:"grpc"`
+	HTTPConfig `yaml:"http"`
 }
 
 type GRPCConfig struct {
-	Port    int           `yaml:"port"`
-	Timeout time.Duration `yaml:"timeout"`
+	AuthConfig `yaml:"auth"`
+	TaskConfig `yaml:"task"`
+}
+
+type AuthConfig struct {
+	Port        int           `yaml:"port"`
+	Timeout     time.Duration `yaml:"timeout"`
+	Env         string        `yaml:"env"`
+	StoragePath string        `yaml:"storage-path"`
+	SecretKey   string        `yaml:"secret-key"`
+	TokenTTL    time.Duration `yaml:"token-ttl"`
+}
+
+type TaskConfig struct {
+	Port        int           `yaml:"port"`
+	Timeout     time.Duration `yaml:"timeout"`
+	Env         string        `yaml:"env"`
+	StoragePath string        `yaml:"storage-path"`
+}
+
+type HTTPConfig struct {
+	APIGatewayConfig `yaml:"gateway"`
+}
+
+type APIGatewayConfig struct {
+	Port      int           `yaml:"port"`
+	Timeout   time.Duration `yaml:"timeout"`
+	Env       string        `yaml:"env"`
+	SecretKey string        `yaml:"secret-key"`
 }
 
 func MustLoad() *Config {

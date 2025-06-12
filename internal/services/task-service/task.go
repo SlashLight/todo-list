@@ -30,7 +30,7 @@ func New(taskProvider TaskProvider, log *slog.Logger) *Service {
 	}
 }
 
-func (ts *Service) CreateTask(ctx context.Context, title, description string, deadline time.Time) (string, error) {
+func (ts *Service) CreateTask(ctx context.Context, authorID uuid.UUID, title, description string, deadline time.Time) (string, error) {
 	const op = "task.CreateTask"
 
 	log := ts.logger.With(
@@ -40,21 +40,15 @@ func (ts *Service) CreateTask(ctx context.Context, title, description string, de
 
 	log.Info("creating task")
 
-	session, err := models.SessionFromContext(ctx)
-	if err != nil {
-		log.Error("failed to get session from context", err)
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
 	task := &models.Task{
 		ID:          uuid.New(),
-		AuthorID:    session.UserID,
+		AuthorID:    authorID,
 		Title:       title,
 		Description: description,
 		Deadline:    deadline,
 	}
 
-	err = ts.TaskProvider.CreateTask(ctx, task)
+	err := ts.TaskProvider.CreateTask(ctx, task)
 	if err != nil {
 		//TODO ...
 		log.Error("failed to create task", err)
@@ -64,23 +58,17 @@ func (ts *Service) CreateTask(ctx context.Context, title, description string, de
 	return task.ID.String(), nil
 }
 
-func (ts *Service) GetTasks(ctx context.Context) ([]*models.Task, error) {
+func (ts *Service) GetTasks(ctx context.Context, authorID uuid.UUID) ([]*models.Task, error) {
 	const op = "task.GetTask"
-
-	session, err := models.SessionFromContext(ctx)
-	if err != nil {
-		ts.logger.Error("failed to get session from context", err)
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
 
 	log := ts.logger.With(
 		slog.String("op", op),
-		slog.String("author_id", session.UserID.String()),
+		slog.String("author_id", authorID.String()),
 	)
 
 	log.Info("getting task")
 
-	tasks, err := ts.TaskProvider.GetTask(ctx, session.UserID)
+	tasks, err := ts.TaskProvider.GetTask(ctx, authorID)
 	if err != nil {
 		//TODO ...
 		log.Error("failed to get task", err)
@@ -110,7 +98,7 @@ func (ts *Service) UpdateTask(ctx context.Context, newTask *models.Task) error {
 	return nil
 }
 
-func (ts *Service) DeleteTask(ctx context.Context, taskID uuid.UUID) error {
+func (ts *Service) DeleteTask(ctx context.Context, taskID, authorID uuid.UUID) error {
 	const op = "task.DeleteTask"
 
 	log := ts.logger.With(
@@ -120,14 +108,7 @@ func (ts *Service) DeleteTask(ctx context.Context, taskID uuid.UUID) error {
 
 	log.Info("deleting task")
 
-	session, err := models.SessionFromContext(ctx)
-	if err != nil {
-		log.Error("failed to get session from context", err)
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	err = ts.TaskProvider.DeleteTask(ctx, taskID, session.UserID)
-	if err != nil {
+	if err := ts.TaskProvider.DeleteTask(ctx, taskID, authorID); err != nil {
 		//TODO ...
 		log.Error("failed to delete task", err)
 		return fmt.Errorf("%s: %w", op, err)
